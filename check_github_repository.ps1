@@ -1,6 +1,7 @@
 
 $CurrentDir = (Get-Location).tostring()
 $GitExePath = ''
+#TODO add this file to localdata
 $ConfigGitPathFile = $($CurrentDir + '/.gitpath')
 $gitOutputPath = Join-Path $env:TEMP "stdout.txt"
 $gitErrorPath = Join-Path $env:TEMP "stderr.txt"
@@ -14,6 +15,7 @@ if (![System.IO.File]::Exists($ConfigGitPathFile)) {
     $null = $FileBrowser.ShowDialog()
     $GitExePath = $FileBrowser.FileName
     Add-Content $ConfigGitPathFile $GitExePath
+    #TODO add git.exe to PATH and an alias for it
     (get-item $ConfigGitPathFile).Attributes += 'Hidden'
 }
 else {
@@ -74,7 +76,7 @@ $Tools | ForEach-Object {
         $AllInstalled = $False
     }
 }
-if (!$AllInstalled){
+if (!$AllInstalled) {
     Write-Host "Install tools"
     . ".\installer.ps1"
     $Tools | ForEach-Object {
@@ -87,7 +89,8 @@ if (!$AllInstalled){
             }
         }
     }
-}else{
+}
+else {
     Write-Host "Everything is up to date"
 }
 
