@@ -1,11 +1,11 @@
 
 $CurrentDir = (Get-Location).tostring()
 $GitExePath = ''
-#TODO add this file to localdata
-$ConfigGitPathFile = $($CurrentDir + '/.gitpath')
+$GitConfFile = $($env:LOCALAPPDATA+"\szgombos\.gitconfigured")
 $gitOutputPath = Join-Path $env:TEMP "stdout.txt"
 $gitErrorPath = Join-Path $env:TEMP "stderr.txt"
-if (![System.IO.File]::Exists($ConfigGitPathFile)) {
+$output=@()
+if (![System.IO.File]::Exists($GitConfFile)) {
     Add-Type -AssemblyName System.Windows.Forms
     $FileBrowser = New-Object System.Windows.Forms.OpenFileDialog -Property @{ 
         InitialDirectory = $CurrentDir 
@@ -14,18 +14,22 @@ if (![System.IO.File]::Exists($ConfigGitPathFile)) {
     
     $null = $FileBrowser.ShowDialog()
     $GitExePath = $FileBrowser.FileName
-    Add-Content $ConfigGitPathFile $GitExePath
-    #TODO add git.exe to PATH and an alias for it
-    (get-item $ConfigGitPathFile).Attributes += 'Hidden'
-}
-else {
-    $GitExePath = Get-Content -Path $ConfigGitPathFile
+    if(![System.IO.File]::Exists($PROFILE.CurrentUserAllHosts)){
+        New-Item $PROFILE.CurrentUserAllHosts -Force | Out-Null
+    }
+    $appendGitPathToProfile = $('$gitexePath ='+'"'+$GitExePath+'"');
+    $appendAliasToProfile = $('New-Alias git $gitexePath')
+    Add-Content $PROFILE.CurrentUserAllHosts $appendGitPathToProfile
+    Add-Content $PROFILE.CurrentUserAllHosts $appendAliasToProfile
+    . $PROFILE.CurrentUserAllHosts
+    New-Item $GitConfFile -Force | Out-Null
+    $output+="We added a git alias to powershell, if you want to use git commands in powershell please restart it"
 }
 
 try {
     Write-Host "Check the latest scripts..."
     $ArgumentsList = "pull"
-    $process = Start-Process $GitExePath -ArgumentList $ArgumentsList -NoNewWindow -PassThru -Wait -RedirectStandardError $gitErrorPath -RedirectStandardOutput $gitOutputPath
+    $process = Start-Process $(get-alias git |select-object -expandproperty definition) -ArgumentList $ArgumentsList -NoNewWindow -PassThru -Wait -RedirectStandardError $gitErrorPath -RedirectStandardOutput $gitOutputPath
     $outputText = (Get-Content $gitOutputPath)
     $outputText | ForEach-Object { Write-Host $_ }
     if ($process.ExitCode -ne 0) {
@@ -93,5 +97,6 @@ if (!$AllInstalled) {
 else {
     Write-Host "Everything is up to date"
 }
+
 
 #"HeidiSQL db client" | DownloadAndInstall -BasePath $CurrentDir -Url "https://www.heidisql.com/downloads/releases/HeidiSQL_11.0_64_Portable.zip" -FolderName "HeidiSQL" -AppendToPath 
